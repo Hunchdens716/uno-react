@@ -1,0 +1,12 @@
+{
+  "name": "ditto-react",
+  "version": "1.0.0",
+  "description": "react公用方法", 
+  "module": "index.ts",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "rollup": "^4.27.3"
+  }
+}
