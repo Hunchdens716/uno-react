@@ -1,7 +1,7 @@
 {
-  "name": "react",
+  "name": "react-reconciler",
   "version": "1.0.0",
-  "description": "",
+  "description": "React协调器",
   "module": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,6 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "shared": "workspace:^1.0.0"
+    "shared": "workspace:*"
   }
 }
