@@ -26,27 +26,29 @@ export const beginWork = (wip: FiberNode) => {
 }
 
 function updateHostRoot(wip: FiberNode) {
-    const baseState = wip.memorizedState;
+    const baseState = wip.memorizedState; // 首屏是null
     const updateQueue = wip.updateQueue as UpdateQueue<Element>;
     const pendings = updateQueue.shared.pending;
+    // 计算后就没有用了
     updateQueue.shared.pending = null;
     const { memorizedState } = processUpdateQueue(baseState, pendings);
+    // 对于HostRoot就是render里面的那个App的ReactElement 
     wip.memorizedState = memorizedState;
 
-    const nextChildren = wip.memorizedState;
-    reconcilerChildren(wip, nextChildren);
+    const nextChildren = wip.memorizedState; // 子对应的ReactElement
+    reconcilerChildren(wip, nextChildren); // 返回子fiberNode
     return wip.child;
 }
 
 function updateHostComponent(wip: FiberNode) {
-    const nextProps = wip.pendingProps;
+    const nextProps = wip.pendingProps; // 在wip的pendingProps的children里 <div><span/></div>
     const nextChildren = nextProps.children;
     reconcilerChildren(wip, nextChildren);
     return wip.child;
 }
 
 function reconcilerChildren(wip: FiberNode, children?: ReactElementType) {
-    const current = wip.alternate;
+    const current = wip.alternate; // 对比的是子节点的current和子节点的ReactElement,因为current对应当前视图 
 
     if (current !== null) {
         // update

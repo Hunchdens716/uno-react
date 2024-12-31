@@ -13,4 +13,5 @@ export interface ReactElementType {
     __mark: string;
 }
 
+// 本质就是个对象或者返回对象的方法
 export type Action<State> = State | ((prevState: State) => State);

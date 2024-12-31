@@ -4,9 +4,15 @@ import { Action } from "shared/ReactTypes";
 
 // 消费Update的数据结构 - UpdateQueue
 
+/**
+ * 
+ */
+
+
 export interface Update<State> {
     action: Action<State>
 }
+
 
 export interface UpdateQueue<State> {
     shared: {
@@ -15,12 +21,14 @@ export interface UpdateQueue<State> {
 }
 
 // 创建update
+// 初始化update的方法
 export const createUpdate = <State>(action: Action<State>): Update<State> => {
     return {
         action
     }
 }
 
+// 初始化updateQueue的方法
 export const createUpdateQueue = <State>() => {
     return {
         shared: {
@@ -29,6 +37,7 @@ export const createUpdateQueue = <State>() => {
     } as UpdateQueue<State>;
 }
 
+// 往updateQueue插入的方法
 export const enqueueUpdate = <State>(
     updateQueue: UpdateQueue<State>,
     update: Update<State>
@@ -37,6 +46,8 @@ export const enqueueUpdate = <State>(
 }
 
 // 消费update的方法
+// baseState当前状态
+// pendingUpdate要更新的状态
 export const processUpdateQueue = <State>(
     baseState: State,
     pendingUpdate: Update<State> | null
