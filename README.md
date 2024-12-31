@@ -194,3 +194,53 @@ FC同样基于
 + completeWork
 
 vite调试实时看到源码
+
+# 实现useState
+
+hook是不能脱离FC上下文，仅仅是普通函数。如何让它有感知上下文环境的能力
+
+比如说：
+hook如何知道在另一个上下文环境内执行
+
+```js
+function App() {
+    useEffect(() => {
+        useState(2);
+    })
+}
+```
+
+hook怎么知道当前是mount还是update
+
+在不同上下文中调用的hook不是同一个
+
+![alt text](image-2.png)
+![alt text](image-3.png)
+
+hook如何知道自身数据保存在哪里
+
+```js
+function App() {
+    const [num] = useState(0);
+}
+```
+
+可以记录当前正在render的FC对应的fiberNode,在fiberNode中保存hook数据
+
+### 实现hooks的数据结构
+fiberNode中可用的数据结构
++ memorizedState
++ updateQueue
+
+![alt text](image-4.png)
+
+hook在调用过程中顺序不能变，因为hook采用链表保存数据
+
+对于Fc对应的fiberNode，存在两层数据
++ fiberNode.memorizedState对应Hooks链表
++ 链表中每个Hook对应自身的数据
+
+### 实现useState
+包括两方面工作
+1. 实现mount时useState的实现
+2. 实现dispatch方法，并接入现有更新流程中
