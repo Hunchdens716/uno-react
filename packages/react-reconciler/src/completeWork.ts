@@ -1,7 +1,7 @@
 import { FiberNode } from "./fiber";
 import { NoFlags } from "./fiberFlags";
-import { HostComponent, HostRoot, HostText } from "./workTags";
-import { createInstance, createTextInstance, appendInitialChild } from "hostConfig";
+import { FunctionComponent, HostComponent, HostRoot, HostText } from "./workTags";
+import { createInstance, createTextInstance, appendInitialChild, Container } from "hostConfig";
 
 // 递归中的归阶段
 export const completeWork = (wip: FiberNode) => {
@@ -12,11 +12,11 @@ export const completeWork = (wip: FiberNode) => {
 
     switch (wip.tag) {
         case HostComponent:
+            // HostComponent的stateNode保存的就是当前的dom节点
             if (current !== null && wip.stateNode) {
                 // update
             } else {
                 // 1.构建dom
-                
                 const instance = createInstance(wip.type, newProps);
                 // 2.将dom插入到dom树中
                 appendAllChildren(instance, wip);
@@ -30,11 +30,16 @@ export const completeWork = (wip: FiberNode) => {
             } else {
                 // 1.构建dom              
                 const instance = createTextInstance(newProps.content);
+                // 不存在child所以不需要挂载
                 wip.stateNode = instance;
             }
             bubbleProperties(wip);
             return null;
         case HostRoot:
+            bubbleProperties(wip);
+            return null;
+        case FunctionComponent:
+            bubbleProperties(wip);
             return null;
         default:
             if (__DEV__) {
@@ -50,9 +55,11 @@ export const completeWork = (wip: FiberNode) => {
 // 但是wip可能有点问题 可能是函数组件
 // 需要找到div或者text
 // 递归类似begin Complete Work
-function appendAllChildren(parent: FiberNode, wip: FiberNode) {
+// 递归过程
+function appendAllChildren(parent: Container, wip: FiberNode) {
     let node = wip.child;
 
+    // 插入的可能有兄弟节点
     while(node !== null) {
         if (node?.tag === HostComponent || node?.tag === HostText) {
             appendInitialChild(parent, node.stateNode);
@@ -75,10 +82,13 @@ function appendAllChildren(parent: FiberNode, wip: FiberNode) {
     }
 }
 
+
+// 因为是向上的过程 可以将子节点的props冒泡到父节点
 function bubbleProperties(wip: FiberNode) {
     let subtreeFlags = NoFlags;
     let child = wip.child; 
 
+    // 遍历所有子节点的childFlags
     while (child !== null) {
         subtreeFlags |= child.subtreeFlags;
         subtreeFlags |= child.flags;

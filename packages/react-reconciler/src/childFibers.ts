@@ -4,6 +4,12 @@ import { REACT_ELEMENT_TYPE } from "shared/ReactSymbols";
 import { HostText } from "./workTags";
 import { Placement } from "./fiberFlags";
 
+/**
+ * 生成子节点
+ * 标记的方法
+ * @param shouldTrackEffects 
+ * @returns 
+ */
 function ChildReconciler(shouldTrackEffects: boolean) {
 
     function reconcilSingleElement(
@@ -14,6 +20,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
         // 根据element创建fiber返回
         const fiber = createFiberFromElement(element);
         fiber.return = returnFiber;
+        // 生成子fiber
         return fiber;
     }
 
@@ -29,6 +36,8 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 
     function placeSingleChild(fiber: FiberNode) {
         // current为null就是首屏
+        // 传进来的是刚创建的fiber 并且fiber为wip 因此alternate为current
+        // 首屏为null
         if (shouldTrackEffects && fiber.alternate === null) {
             // 首屏渲染
             fiber.flags |= Placement;

@@ -33,8 +33,11 @@ export const commitMutationEffects = (finishedWork: FiberNode) => {
 const commitMutationEffectsOnFiber = (finishedWork: FiberNode) => {
     const flags = finishedWork.flags;
 
+    // 先执行对应方法 然后删除
     if ((flags & Placement) !== NoFlags) {
+        // 执行对应的方法
         commitPlacement(finishedWork);
+        // 移除placement
         finishedWork.flags &= ~Placement;
     }
     // flags Update
@@ -42,8 +45,8 @@ const commitMutationEffectsOnFiber = (finishedWork: FiberNode) => {
 }
 
 const commitPlacement = (finishedWork: FiberNode) => {
-
-    // finishedWork DOM
+    // 父级的dom
+    // finishedWork的DOM节点
     if (__DEV__) {
         console.warn("执行placement", finishedWork);
     }
@@ -54,6 +57,11 @@ const commitPlacement = (finishedWork: FiberNode) => {
     if (hostParent !== null) appendPlacementNodeIntoContainer(finishedWork, hostParent);   
 }
 
+/**
+ * 获取父级的节点
+ * @param fiber 
+ * @returns 
+ */
 function getHostParent(fiber: FiberNode): Container | null{
     let parent = fiber.return;
 
@@ -81,11 +89,12 @@ function getHostParent(fiber: FiberNode): Container | null{
 function appendPlacementNodeIntoContainer(finishedWork: FiberNode, hostParent: Container) {
     // fiber host
     if (finishedWork.tag === HostComponent || finishedWork.tag === HostText) {
-        appendChildToContainer(finishedWork.stateNode, hostParent);
+        appendChildToContainer(hostParent, finishedWork.stateNode);
         return;
     }
 
     const child = finishedWork.child;
+    
     if (child !== null) {
         appendPlacementNodeIntoContainer(child, hostParent);
         let sibling = child.sibling;

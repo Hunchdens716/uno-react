@@ -166,9 +166,9 @@ flags分布在不同的dom树中，如何快速找到
 ### 初探ReactDOM
 
 react 内部三个阶段
-+ schedule阶段
-+ render阶段 (begineWork completeWork)
-+ commit阶段（commiWork阶段）
++ schedule阶段 调度阶段主要做的是更新
++ render阶段 (begineWork completeWork) 处理更新阶段
++ commit阶段（commiWork阶段）根据flags执行宿主环境的操作
 
 commit阶段3个子阶段
 + beforeMutation阶段
@@ -182,3 +182,15 @@ commit阶段3个子阶段
 ReactDOM包
 1. 兼容原版
 2. hostConfig的指向
+
+# FC与实现
+
+FunctionComponent需考虑的问题
++ 如何支持FC
++ 如果支持hooks
+
+FC同样基于
++ begineWork
++ completeWork
+
+vite调试实时看到源码

@@ -66,7 +66,7 @@ function renderRoot(root: FiberRootNode) {
     const finishedWork = root.current.alternate;
     root.finishedWork = finishedWork;
 
-    // wip fiberNode树 树中的flags
+    // wip fiberNode树 以及树中的flags
     commitRoot(root);
 }
 
@@ -76,6 +76,7 @@ function commitRoot(root: FiberRootNode) {
     if (finishedWork === null) return;
 
     if (__DEV__) console.warn("commit阶段开始", finishedWork);
+
     // 重置操作
     root.finishedWork = null;
 
@@ -85,6 +86,7 @@ function commitRoot(root: FiberRootNode) {
         (finishedWork.subtreeFlags & MutationMask) !== NoFlags;
     const rootHasEffect = 
         (finishedWork.flags & MutationMask) !== NoFlags;
+
 
     if ( subtreeHasEffect || rootHasEffect ) {
         // beforeMutation

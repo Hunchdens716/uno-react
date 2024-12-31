@@ -1,8 +1,9 @@
 import { ReactElementType } from "shared/ReactTypes";
 import { FiberNode } from "./fiber";
 import { processUpdateQueue, UpdateQueue } from "./updateQueue";
-import { HostComponent, HostRoot, HostText } from "./workTags";
+import { FunctionComponent, HostComponent, HostRoot, HostText } from "./workTags";
 import { mountChildFibers, reconcilChildFibers } from "./childFibers";
+import { renderWithHooks } from "./fiberHooks";
 
 // 递归中的递阶段
 export const beginWork = (wip: FiberNode) => {
@@ -17,12 +18,22 @@ export const beginWork = (wip: FiberNode) => {
             return updateHostComponent(wip);
         case HostText:
             return null;
+        case FunctionComponent:
+            return updateFunctionComponent(wip);
         default:
             if (__DEV__) {
                 console.warn("beginWork未实现的类型");
             }
             break;
     }
+
+    return null;
+}
+
+function updateFunctionComponent(wip: FiberNode) {
+    const nextChildren = renderWithHooks(wip);
+    reconcilerChildren(wip, nextChildren);
+    return wip.child;
 }
 
 function updateHostRoot(wip: FiberNode) {
@@ -40,6 +51,11 @@ function updateHostRoot(wip: FiberNode) {
     return wip.child;
 }
 
+/**
+ * 不需要触发更新
+ * @param wip 
+ * @returns 
+ */
 function updateHostComponent(wip: FiberNode) {
     const nextProps = wip.pendingProps; // 在wip的pendingProps的children里 <div><span/></div>
     const nextChildren = nextProps.children;
@@ -51,10 +67,10 @@ function reconcilerChildren(wip: FiberNode, children?: ReactElementType) {
     const current = wip.alternate; // 对比的是子节点的current和子节点的ReactElement,因为current对应当前视图 
 
     if (current !== null) {
-        // update
+        // HostRootFiber会走到 update流程
         wip.child = reconcilChildFibers(wip, current?.child, children);
     } else {
-        // mount
+        // 首屏渲染所有都会走 mount流程
         wip.child = mountChildFibers(wip, null, children);
     }
 }

@@ -9,7 +9,7 @@ export function createRoot(container: Container) {
 
     return {
         render(element: ReactElementType) {
-            updateContainer(element, root);
+            updateContainer(element, root); 
         }
     }
 }
