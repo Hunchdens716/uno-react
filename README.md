@@ -244,3 +244,32 @@ hook在调用过程中顺序不能变，因为hook采用链表保存数据
 包括两方面工作
 1. 实现mount时useState的实现
 2. 实现dispatch方法，并接入现有更新流程中
+
+# 初谈Update流程
+
+对于begineWork:
++ 需要处理childDeletion的情况
++ 需要处理节点移动的情况（abc -> bca）
+对于completeWork:
++ 需要处理HostText内容更新的情况
++ 需要处理HostComponent属性变化的情况
+对于commitWork:
++ 对于childDeletion 需要遍历被删除的子树
+对于useState
++ 实现相对于mountState的updateState
+
+## begineWork
+本节课仅处理单一节点，所以省去了节点移动的情况，我们需要处理
++ singleElement
++ singleTextNode
+处理流程为：
+1. 比较是否可以复用current fiber
+a 比较key，如果key不同，不能复用
+b 比较type,如果type不同，不能复用
+c 如果key与type相同，则可以复用
+2. 不能复用，则创建新的（同mount流程）,可以复用则复用旧的旧的
+
+注意：对于同一个fiberNode,即使反复更新，current,wip这两个fiberNode会重复使用
+
+## completeWork
+主要处理[标记Update]的情况，本节课我们处理HostText内容更新的情况
