@@ -273,3 +273,22 @@ c 如果key与type相同，则可以复用
 
 ## completeWork
 主要处理[标记Update]的情况，本节课我们处理HostText内容更新的情况
+
+## commitWork流程
+
+对于标记ChildDeletion的子树，由于子树中
++ 对于FC,需要处理useEffect unmount执行，解绑ref
++ 对于HostComponent,需要解绑ref
++ 对于子树的[根HostComponent] 需要移除dom
+所以需要实现【遍历childDeletion子树】的流程
+
+## 对于useState
+需要实现：
++ 针对update时的dispatcher
++ 实现对标mountWorkInProgressHook的updateWorkInProgressHook
++ 实现updateState中[计算新state的逻辑]
+
+其中updateWorkInProgressHook的实现需要考虑的问题
++ hook数据从哪里来
++ 交互阶段触发的更新
+ 

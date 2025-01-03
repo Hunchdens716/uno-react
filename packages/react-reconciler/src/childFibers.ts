@@ -14,6 +14,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
 
     function deleteChild(returnFiber: FiberNode, childToDelete: FiberNode) {
         if (!shouldTrackEffects) return;
+        // deletions保存父节点需要删除的子节点
         const deletions = returnFiber.deletions;
         if (deletions === null) {
             returnFiber.deletions = [childToDelete];
@@ -34,6 +35,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
             if (currentFiber.key === key) {
                 // type相同
                 if (element.$$typeof === REACT_ELEMENT_TYPE) {
+                    // 单节点情况
                     if (currentFiber.type === element.type) {
                         // type相同
                         const exiting = useFiber(currentFiber, element.props);
@@ -133,6 +135,12 @@ function ChildReconciler(shouldTrackEffects: boolean) {
     }
 }
 
+/**
+ * 处理复用情况
+ * @param fiber 
+ * @param pendingProps 
+ * @returns 
+ */
 function useFiber(fiber: FiberNode, pendingProps: Props): FiberNode {
     const clone = createWorkInProgress(fiber, pendingProps);
     clone.index = 0;

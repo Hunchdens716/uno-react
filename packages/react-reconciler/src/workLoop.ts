@@ -23,7 +23,7 @@ export function scheduleUpdateOnFiber(fiber: FiberNode) {
     // 首屏渲染传入的fiber是hostRootFiber
     // 对于setState是根节点fiberRootNode
 
-    // 这个root就是fiberRootNode
+    // 从节点一级一级遍历到root 就是fiberRootNode
     const root = markUpdateFromFiberToRoot(fiber);
     renderRoot(root);
 }
@@ -128,7 +128,7 @@ function completeUnitOfWork(fiber: FiberNode) {
     let node: FiberNode | null = fiber;
 
     do {
-        completeWork(node);
+        completeWork(node); // dom保存stateNode
         // 找兄弟节点
         const sibling = node.sibling;
 

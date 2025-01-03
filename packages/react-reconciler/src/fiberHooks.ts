@@ -44,6 +44,10 @@ const HooksDispatcherOnMount: Dispatcher = {
     useState: mountState
 }
 
+const HooksDispatcherOnUpdate: Dispatcher = {
+    useState: updateState
+}
+
 function mountState<State>(initialState: (() => State | State)): [State, Dispatch<State>] {
     // 找到当前useState对应的hook数据
     const hook = mountWorkInProgressHook();
