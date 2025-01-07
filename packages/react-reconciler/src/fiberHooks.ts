@@ -9,6 +9,7 @@ const { currentDispatcher } = internals
 
 let currentlyRenderFiber: FiberNode | null = null;
 let workInProgressHook: Hook | null = null; // 指向当前正在处理的hook
+let currentHook: Hook | null = null; // 指向当前正在处理的hook
 
 // hook需要满足所有数据结构的使用
 interface Hook {
@@ -26,6 +27,7 @@ export function renderWithHooks(wip: FiberNode) {
 
     if (current !== null) {
         // update
+        currentDispatcher.current = HooksDispatcherOnUpdate;
     } else {
         // mount
         currentDispatcher.current = HooksDispatcherOnMount
@@ -46,6 +48,28 @@ const HooksDispatcherOnMount: Dispatcher = {
 
 const HooksDispatcherOnUpdate: Dispatcher = {
     useState: updateState
+}
+
+function updateState<State>(initialState: (() => State | State)): [State, Dispatch<State>] {
+    // 找到当前useState对应的hook数据
+    const hook = updateWorkInProgressHook();
+    let memorizedState;
+    if (initialState instanceof Function) {
+        memorizedState = initialState();
+    } else {
+        memorizedState = initialState;
+    }
+
+    const queue = createUpdateQueue<State>();
+    hook.updateQueue = queue;
+    hook.memorizedState = memorizedState;
+
+    // 这样子可以绑定到window上去触发, fiber已经保存好了
+    // @ts-ignore
+    const dispatch = dispatchSetState.bind(null, currentlyRenderFiber, queue);
+    queue.dispatch = dispatch;
+
+    return [memorizedState, dispatch];
 }
 
 function mountState<State>(initialState: (() => State | State)): [State, Dispatch<State>] {
@@ -74,6 +98,46 @@ function dispatchSetState<State>(fiber: FiberNode | null, updateQueue: UpdateQue
     const update = createUpdate(action);
     enqueueUpdate(updateQueue, update);
     scheduleUpdateOnFiber(fiber!);
+}
+
+function updateWorkInProgressHook(): Hook {
+    let nextCurrentHook: Hook | null;
+
+    if (currentHook === null) {
+        // 这是这个FC update时候的第一个Hook
+        const current = currentlyRenderFiber?.alternate;
+        if (current !== null) {
+            nextCurrentHook = current?.memorizedState;
+        } else {
+            nextCurrentHook = null;
+        }
+    } else {
+        // 这个FC update时候的后续hook
+        nextCurrentHook = currentHook.next;
+    }
+
+    currentHook = nextCurrentHook;
+    const newHook: Hook = {
+        memorizedState: currentHook?.memorizedState,
+        updateQueue: currentHook?.updateQueue,
+        next: null
+    }
+
+    if (workInProgressHook === null) {
+        // mount时 第一个hook
+        if (currentlyRenderFiber === null) {
+            throw new Error("请在函数组件内调用hook");
+        } else {
+            workInProgressHook = newHook;
+            currentlyRenderFiber.memorizedState = workInProgressHook;
+        }
+    } else {
+        // mount时后序的hook
+        workInProgressHook.next = newHook;
+        workInProgressHook = newHook;
+    }
+
+    return workInProgressHook;
 }
 
 function mountWorkInProgressHook() {

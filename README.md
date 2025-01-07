@@ -290,5 +290,16 @@ c 如果key与type相同，则可以复用
 
 其中updateWorkInProgressHook的实现需要考虑的问题
 + hook数据从哪里来
-+ 交互阶段触发的更新
++ 交互阶段触发的更新 button的onClick
++ render阶段触发的更新
+```js
+function App() {
+    const [num, useNum] = useState(10);
+    useNum(100)
+
+    return (
+        <div>{num}</div>
+    )
+}
+```
  
