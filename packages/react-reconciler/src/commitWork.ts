@@ -89,7 +89,7 @@ function commitDeletion(childToDelete: FiberNode) {
     // 移除rootHostComponent的DOM
     if (rootHostNode !== null) {
         const hostParent = getHostParent(childToDelete);
-        removeChild(rootHostNode, hostParent!);
+        removeChild((rootHostNode as FiberNode).stateNode , hostParent!);
     } 
 
     childToDelete.return = null;

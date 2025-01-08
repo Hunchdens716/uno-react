@@ -1,7 +1,7 @@
 import internals from "shared/internals";
 import { FiberNode } from "./fiber";
 import { Dispatch, Dispatcher } from "react/src/currentDispatcher";
-import { createUpdate, createUpdateQueue, enqueueUpdate, UpdateQueue } from "./updateQueue";
+import { createUpdate, createUpdateQueue, enqueueUpdate, processUpdateQueue, UpdateQueue } from "./updateQueue";
 import { Action } from "shared/ReactTypes";
 import { scheduleUpdateOnFiber } from "./workLoop";
 
@@ -19,7 +19,7 @@ interface Hook {
 }
 
 export function renderWithHooks(wip: FiberNode) {
-    // 赋值操作
+    // 赋值操作   
     currentlyRenderFiber = wip;
     wip.memorizedState = null; // 后面创建链表
 
@@ -53,23 +53,33 @@ const HooksDispatcherOnUpdate: Dispatcher = {
 function updateState<State>(initialState: (() => State | State)): [State, Dispatch<State>] {
     // 找到当前useState对应的hook数据
     const hook = updateWorkInProgressHook();
-    let memorizedState;
-    if (initialState instanceof Function) {
-        memorizedState = initialState();
-    } else {
-        memorizedState = initialState;
+    
+    // 计算新state的逻辑
+    const queue = hook.updateQueue as UpdateQueue<State>;
+    const pending = queue.shared.pending;
+
+    if (pending !== null) {
+        const {memorizedState} = processUpdateQueue(hook.memorizedState, pending);
+        hook.memorizedState = memorizedState;
     }
 
-    const queue = createUpdateQueue<State>();
-    hook.updateQueue = queue;
-    hook.memorizedState = memorizedState;
+    // let memorizedState;
+    // if (initialState instanceof Function) {
+    //     memorizedState = initialState();
+    // } else {
+    //     memorizedState = initialState;
+    // }
 
-    // 这样子可以绑定到window上去触发, fiber已经保存好了
-    // @ts-ignore
-    const dispatch = dispatchSetState.bind(null, currentlyRenderFiber, queue);
-    queue.dispatch = dispatch;
+    // const queue = createUpdateQueue<State>();
+    // hook.updateQueue = queue;
+    // hook.memorizedState = memorizedState;
 
-    return [memorizedState, dispatch];
+    // // 这样子可以绑定到window上去触发, fiber已经保存好了
+    // // @ts-ignore
+    // const dispatch = dispatchSetState.bind(null, currentlyRenderFiber, queue);
+    // queue.dispatch = dispatch;
+
+    return [hook.memorizedState, queue.dispatch as Dispatch<State>];
 }
 
 function mountState<State>(initialState: (() => State | State)): [State, Dispatch<State>] {
@@ -101,6 +111,7 @@ function dispatchSetState<State>(fiber: FiberNode | null, updateQueue: UpdateQue
 }
 
 function updateWorkInProgressHook(): Hook {
+    // TODO render阶段时候的更新
     let nextCurrentHook: Hook | null;
 
     if (currentHook === null) {
@@ -109,11 +120,20 @@ function updateWorkInProgressHook(): Hook {
         if (current !== null) {
             nextCurrentHook = current?.memorizedState;
         } else {
+            // mount阶段 
             nextCurrentHook = null;
         }
     } else {
         // 这个FC update时候的后续hook
         nextCurrentHook = currentHook.next;
+    }
+
+    if (nextCurrentHook === null) {
+        // mount/update u1 u2 u3
+        // update u1 u2 u3 u4
+        throw new Error(`
+            组件${currentlyRenderFiber?.type}本次执行时的Hook比上次多
+        `)
     }
 
     currentHook = nextCurrentHook;
