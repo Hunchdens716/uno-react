@@ -303,3 +303,50 @@ function App() {
 }
 ```
  
+# 实现事件系统
+
+事件系统本质上植根于浏览器事件模型，所以他隶属于ReactDOM,在实现时要做到Reconciler 0侵入
+
+实现事件系统需要考虑：
++ 模拟实现浏览器事件捕获、冒泡流程
++ 实现合成事件对象
++ 方便后续扩展
+
+实现ReactDOM与Reconciler对接
+
+将事件回调保存在DOM中，通过以下两个时机对接：
++ 创建DOM时
++ 更新属性时
+
+# 模拟实现浏览器事件流程
+![alt text](image-5.png)
+需要注意的点
++ 基于事件对象实现合成事件，以满足自定义需求（比如：阻止事件传递）
++ 方便后续扩展优先级机制
+
+# Diff
+对于同级多节点Diff的支持
+单节点需要支持的情况：
++ 插入Placement
++ 删除ChildDeletion
+
+多节点需要支持的情况：
++ 插入Placement
++ 删除ChildDeletion
++ 移动Placement
+
+整体流程分为4步
+1. 将current中所有同级fiber保存到Map中
+2. 遍历newChild数组，对于每个遍历到的element,存在两种情况
+a. 在Map中存在对应的currentFiber, 且可以复用
+b. 在Map中不存在对应的currentFiber, 或不能复用 ( key相同，tag也相同)
+3. 判断是插入还是移动
+4. 最后map中标记的都删除
+
+步骤2 -- 是否复用详解
+首先，根据key从Map中获取current Fiber,如果不存在current Fiber,则没有复用的可能
+
+接下来，分情况讨论：
++ element是HostText, current Fiber是么
++ element是其他ReactElement, current Fiber是么
++ TODO element是数组或Fragment, current Fiber是么

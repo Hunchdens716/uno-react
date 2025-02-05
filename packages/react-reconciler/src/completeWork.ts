@@ -1,3 +1,4 @@
+import { updateFiberProps } from "react-dom/src/SyntheticEvent";
 import { FiberNode } from "./fiber";
 import { NoFlags, Update } from "./fiberFlags";
 import { FunctionComponent, HostComponent, HostRoot, HostText } from "./workTags";
@@ -19,6 +20,13 @@ export const completeWork = (wip: FiberNode) => {
             // HostComponent的stateNode保存的就是当前的dom节点
             if (current !== null && wip.stateNode) {
                 // update
+                // 1. props是否变化
+                // 2. 变了 update flag
+
+                // className style
+
+                // 这里暂时这么做
+                updateFiberProps(wip.stateNode, newProps);
             } else {
                 // 1.构建dom
                 const instance = createInstance(wip.type, newProps);
