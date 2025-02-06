@@ -73,6 +73,8 @@ export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
     return ReactElement(type, key, ref, props);
 };
 
+export const Fragment = REACT_ELEMENT_TYPE;
+
 export const jsxDEV = (
     type: ElementType,
     config: any,

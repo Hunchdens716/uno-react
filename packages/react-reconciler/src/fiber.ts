@@ -1,7 +1,8 @@
 import { Props, Key, Ref, ReactElementType } from "../../shared/ReactTypes";
-import { FunctionComponent, HostComponent, WorkTag } from "./workTags";
+import { Fragment, FunctionComponent, HostComponent, WorkTag } from "./workTags";
 import { Flags, NoFlags } from "./fiberFlags";
 import { Container } from "hostConfig";
+import { Lane, Lanes, NoLane, NoLanes } from "./fiberLanes";
 
 /**
  * jsx("div")
@@ -38,7 +39,7 @@ export class FiberNode {
 
     constructor(tag: WorkTag, pendingProps: Props, key: Key) {
         this.tag = tag;
-        this.key =key,
+        this.key = key || null,
         // HostComponent 如果是<div>的话 保存的就是 div 这个 DOM
         this.stateNode = null;
         // FunctionComponent () => {} FiberNode的类型
@@ -77,12 +78,16 @@ export class FiberRootNode {
     container: Container; // 保存rootElement 不同环境不一样
     current: FiberNode; // 指向hostRootFiber
     finishedWork: FiberNode | null; // 更新完成后的FiberNode 
+    pendingLanes: Lanes;
+    finishedLane: Lane;
     constructor(container: Container, hostRootFiberNode: FiberNode) {
         this.container = container;
         this.current = hostRootFiberNode;
 
         hostRootFiberNode.stateNode = this;
         this.finishedWork = null;
+        this.pendingLanes = NoLanes;
+        this.finishedLane = NoLane;
     }
 } 
 
@@ -134,5 +139,10 @@ export function createFiberFromElement(element: ReactElementType): FiberNode {
     }
     const fiber = new FiberNode(fiberTag, props, key);
     fiber.type = type;
+    return fiber;
+}
+
+export function createFiberFromFragment(elements: any[], key: Key): FiberNode {
+    const fiber = new FiberNode(Fragment, elements, key);
     return fiber;
 }

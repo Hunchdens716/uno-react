@@ -1,25 +1,28 @@
 import { ReactElementType } from "shared/ReactTypes";
 import { FiberNode } from "./fiber";
 import { processUpdateQueue, UpdateQueue } from "./updateQueue";
-import { FunctionComponent, HostComponent, HostRoot, HostText } from "./workTags";
+import { Fragment, FunctionComponent, HostComponent, HostRoot, HostText } from "./workTags";
 import { mountChildFibers, reconcilChildFibers } from "./childFibers";
 import { renderWithHooks } from "./fiberHooks";
+import { Lane } from "./fiberLanes";
 
 // 递归中的递阶段
-export const beginWork = (wip: FiberNode) => {
+export const beginWork = (wip: FiberNode, renderLane: Lane) => {
     
     // 比较，返回子 fiberNode
     switch (wip.tag) {
         case HostRoot:
             // 计算状态最新值
             // 创造子fiberNode
-            return updateHostRoot(wip);
+            return updateHostRoot(wip, renderLane);
         case HostComponent:
             return updateHostComponent(wip);
         case HostText:
             return null;
         case FunctionComponent:
-            return updateFunctionComponent(wip);
+            return updateFunctionComponent(wip, renderLane);
+        case Fragment:
+            return updateFragment(wip);
         default:
             if (__DEV__) {
                 console.warn("beginWork未实现的类型");
@@ -30,19 +33,25 @@ export const beginWork = (wip: FiberNode) => {
     return null;
 }
 
-function updateFunctionComponent(wip: FiberNode) {
-    const nextChildren = renderWithHooks(wip);
+function updateFragment(wip: FiberNode) {
+    const nextChildren = wip.pendingProps;
     reconcilerChildren(wip, nextChildren);
     return wip.child;
 }
 
-function updateHostRoot(wip: FiberNode) {
+function updateFunctionComponent(wip: FiberNode, renderLane: Lane) {
+    const nextChildren = renderWithHooks(wip, renderLane);
+    reconcilerChildren(wip, nextChildren);
+    return wip.child;
+}
+
+function updateHostRoot(wip: FiberNode, renderLane: Lane) {
     const baseState = wip.memorizedState; // 首屏是null
     const updateQueue = wip.updateQueue as UpdateQueue<Element>;
     const pendings = updateQueue.shared.pending;
     // 计算后就没有用了
     updateQueue.shared.pending = null;
-    const { memorizedState } = processUpdateQueue(baseState, pendings);
+    const { memorizedState } = processUpdateQueue(baseState, pendings, renderLane);
     // 对于HostRoot就是render里面的那个App的ReactElement 
     wip.memorizedState = memorizedState;
 

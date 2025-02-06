@@ -350,3 +350,87 @@ b. 在Map中不存在对应的currentFiber, 或不能复用 ( key相同，tag也
 + element是HostText, current Fiber是么
 + element是其他ReactElement, current Fiber是么
 + TODO element是数组或Fragment, current Fiber是么
+
+Placement同时对应：
++ 移动
++ 插入
+
+对于插入操作，之前对应的DOM方法是parentNode.appendChild,现在为了实现移动操作，需要支持parentNode.insertBefore
+
+parentNode.insertBefore需要找到[目标兄弟Host节点]，需要考虑以下两个因素
++ 可能并不是目标fiber的直接兄弟节点
++ 不稳定的Host节点不能做为[目标兄弟Host节点]
+
+# 13.实现Fragment
+
+为了提高组件结构灵活性，需要实现Fragment, 具体来说需要区分以下几种情况
+
+1. Fragment包裹其他组件
+```html
+<>
+    <div></div>
+    <div></div>
+</>
+
+渲染结果
+<div></div>
+<div></div>
+```
+
+2. Fragment与其他节点同级
+```html
+<ul>
+    <>
+        <li></li>
+        <li></li>
+    </>
+    <li></li>
+    <li></li>
+</ul>
+```
+
+3. 数组形式的Fragment
+
+# 14.实现同步调度流程
+
+更新到底是同步还是异步
+
+当前现状：
++ 从触发更新到render,再到commit都是同步
++ 多次触发更新会重复多次更新流程
+
+可以改进的流程：多次触发更新，只进行一次更新流程
+[Batch Updated(批处理)]：多次触发更新，只进行一次更新流程
+将多次更新合并为一次任务，理念上类似防抖，节流。我们需要考虑合并的时机是
++ 宏任务
++ 微任务
+用三款框架实现，Batch Updates,打印结果不同：
+
+结论 React批处理的时机既有宏任务，也有微任务
+
+新增调度阶段
+
+既然我们需要[多次触发更新，只进行一次更新流程]，意味着我们要将更新合并，所以在
++ render阶段
++ commite阶段
+的基础上增加schedule阶段（调度阶段）
+
+对于Update的调整
+
+[多次触发更新，只进行一次更新流程]中[多次触发更新] 意味着对于同一个fiber,会创建多个update;
+
+[多次触发更新，只进行一次更新流程]，意味着要达成3个目标
+1.需要实现一套优先级机制，每个更新都拥有优先级
+2.需要能够合并一个宏任务/微任务重触发的所有更新
+3.需要一套算法，用于决定哪个优先级优先进入render阶段 
+
+实现目标1: Lane模型
+包括：
++ lane(二进制位，代表优先级)
++ lanes(二进制位，代表lane的集合)
+
+其中：
++ lane作为update的优先级
++ lanes作为lane的集合
+
+# 15 实现useEffect

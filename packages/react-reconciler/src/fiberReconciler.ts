@@ -5,6 +5,7 @@ import { createUpdate, createUpdateQueue, enqueueUpdate, UpdateQueue } from "./u
 import { ReactElementType } from "shared/ReactTypes";
 import { Update } from "./fiberFlags";
 import { scheduleUpdateOnFiber } from "./workLoop";
+import { requestUpdateLanes } from "./fiberLanes";
 
 
 // fiberRootNode -> hostRootFiber -> App
@@ -25,10 +26,11 @@ export function createContainer(container: Container) {
 // render方法 执行updateContainer
 export function updateContainer(element: ReactElementType | null, root: FiberRootNode) {
     const hostRootFiber = root.current;
-    const update = createUpdate<ReactElementType | null>(element);
+    const lane = requestUpdateLanes();
+    const update = createUpdate<ReactElementType | null>(element, lane);
     // 插入updateQueue
     enqueueUpdate(hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>, update);
     
-    scheduleUpdateOnFiber(hostRootFiber)
+    scheduleUpdateOnFiber(hostRootFiber, lane)
     return element;
 }
