@@ -1,16 +1,22 @@
-import { createWorkInProgress, FiberNode, FiberRootNode } from "./fiber";
+import { createWorkInProgress, FiberNode, FiberRootNode, PendingsPassiveEffects } from "./fiber";
 import { beginWork } from "./beginWork";
 import { completeWork } from "./completeWork";
 import { HostRoot } from "./workTags";
-import { MutationMask, NoFlags } from "./fiberFlags";
+import { MutationMask, NoFlags, PassiveMask } from "./fiberFlags";
 import { commitMutationEffects } from "./commitWork";
 import { getHighestPriorityLane, Lane, markRootFinished, mergeLanes, NoLane, SyncLane } from "./fiberLanes";
 import { flushSyncCallbacks, scheduleSyncCallback } from "./syncTaskQueue";
 import { scheduleMicroTask } from "hostConfig";
+import {
+    unstable_scheduleCallback as scheduleCallback,
+    unstable_NormalPriority as NormalPriority
+} from "scheduler"
 
 // 全局指针，指向现在当前正在工作的fiberNode
 let workInProgress: FiberNode | null = null;
 let wipRootRenderLane: Lane = NoLane; // 本次更新的lane
+let rootDoesHasPaassiveEffects: Boolean = false;
+
 // 用于执行初始化操作
 // 主要用于将workInProgress赋值为当前工作的fiberNode
 function prepareFreshStack(root: FiberRootNode, lane: Lane) {
@@ -124,6 +130,23 @@ function commitRoot(root: FiberRootNode) {
 
     markRootFinished(root, lane);
 
+    if (
+        (finishedWork.flags & PassiveMask) !== NoFlags ||
+        (finishedWork.subtreeFlags & PassiveMask) !== NoFlags
+    ) {
+        // 当前函数组件存在useEffect
+        if (!rootDoesHasPaassiveEffects) {
+            rootDoesHasPaassiveEffects = true;
+            
+            scheduleCallback(NormalPriority, () => {
+                // 执行副作用
+                // 执行副作用 
+                flushPassiveEffects(root.pendingPassiveEffects);
+                return
+            })
+        }
+    }
+
     // 判断是否存在3个子阶段需要执行的操作
     // root本身的flags 以及root的subFlags
     const subtreeHasEffect = 
@@ -136,13 +159,19 @@ function commitRoot(root: FiberRootNode) {
         // beforeMutation
 
         // mutation Placement
-        commitMutationEffects(finishedWork);
+        commitMutationEffects(finishedWork, root);
 
         root.current = finishedWork; 
         // layout阶段
     } else {
         root.current = finishedWork;
     }
+
+    rootDoesHasPaassiveEffects = false;
+    ensureRootIsScheduled(root);
+}
+
+function flushPassiveEffects(pendingPassiveEffects: PendingsPassiveEffects) {
 
 }
 
