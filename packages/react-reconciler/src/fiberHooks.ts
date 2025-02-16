@@ -40,6 +40,8 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
     // 赋值操作   
     currentlyRenderFiber = wip;
     wip.memorizedState = null; // 后面创建链表
+    // 重启hooks链条表
+    wip.updateQueue = null;
     renderLane = lane;
 
     const current = wip.alternate;
@@ -71,6 +73,7 @@ const HooksDispatcherOnMount: Dispatcher = {
 
 const HooksDispatcherOnUpdate: Dispatcher = {
     useState: updateState, 
+    useEffect: updateEffect,
 }
 
 function mountEffect(create: EffectCallback | void, deps: EffectDeps | void, ) {
@@ -79,6 +82,44 @@ function mountEffect(create: EffectCallback | void, deps: EffectDeps | void, ) {
     (currentlyRenderFiber as FiberNode).flags |= PassiveEffect;
 
     hook.memorizedState = pushEffect(Passive | HookHasEfffect, create, undefined, nextDeps);
+}
+
+function areHookInputsEqual(nextDeps: EffectDeps, prevDeps: EffectDeps) {
+    if (prevDeps === null || nextDeps === null) {
+        return false;
+    }
+
+    for (let i = 0; i < prevDeps.length && i < nextDeps.length; i++) {
+        if (Object.is(prevDeps[i], nextDeps[i])) {
+            continue;
+        }
+        return false;
+    }
+    return true;
+}
+
+function updateEffect(create: EffectCallback | void, deps: EffectDeps | void, ) {
+    const hook = updateWorkInProgressHook();
+    const nextDeps = deps === undefined ? null : deps;
+    let destroy: EffectCallback | void;
+
+    if (currentHook !== null) {
+        const prevEffect = currentHook.memorizedState as Effect;
+        destroy = prevEffect.destroy;
+
+        if (nextDeps !== null) {
+            // 浅比较依赖
+            const prevDeps = prevEffect.deps;
+            if (areHookInputsEqual(nextDeps, prevDeps)) {
+                hook.memorizedState = pushEffect(Passive, create, destroy, nextDeps);
+                return;
+            }
+        }
+
+        // 浅比较不相等
+        (currentlyRenderFiber as FiberNode).flags |= PassiveEffect;
+        hook.memorizedState = pushEffect(Passive|HookHasEfffect, create, destroy, nextDeps);
+    }
 }
 
 function pushEffect(hookFlags: Flags, create: EffectCallback | void, destroy: EffectCallback | void, deps: EffectDeps): Effect {

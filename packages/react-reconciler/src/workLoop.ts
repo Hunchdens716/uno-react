@@ -3,7 +3,7 @@ import { beginWork } from "./beginWork";
 import { completeWork } from "./completeWork";
 import { HostRoot } from "./workTags";
 import { MutationMask, NoFlags, PassiveMask } from "./fiberFlags";
-import { commitMutationEffects } from "./commitWork";
+import { commitHookEffectListCreate, commitHookEffectListDestroy, commitHookEffectListUnmount, commitMutationEffects } from "./commitWork";
 import { getHighestPriorityLane, Lane, markRootFinished, mergeLanes, NoLane, SyncLane } from "./fiberLanes";
 import { flushSyncCallbacks, scheduleSyncCallback } from "./syncTaskQueue";
 import { scheduleMicroTask } from "hostConfig";
@@ -11,6 +11,7 @@ import {
     unstable_scheduleCallback as scheduleCallback,
     unstable_NormalPriority as NormalPriority
 } from "scheduler"
+import { HookHasEfffect, Passive } from "./hookEffectTags";
 
 // 全局指针，指向现在当前正在工作的fiberNode
 let workInProgress: FiberNode | null = null;
@@ -172,7 +173,21 @@ function commitRoot(root: FiberRootNode) {
 }
 
 function flushPassiveEffects(pendingPassiveEffects: PendingsPassiveEffects) {
+    pendingPassiveEffects.unmount.forEach(effect => {
+        // 首先卸载的情况
+        commitHookEffectListUnmount(Passive, effect );
+    })
+    pendingPassiveEffects.unmount = [];
 
+    pendingPassiveEffects.update.forEach(effect => {
+        commitHookEffectListDestroy(Passive | HookHasEfffect, effect);
+    })
+
+    pendingPassiveEffects.update.forEach(effect => {
+        commitHookEffectListCreate(Passive | HookHasEfffect, effect);
+    })
+    pendingPassiveEffects.update = [];
+    flushSyncCallbacks();
 }
 
 function workLoop() {

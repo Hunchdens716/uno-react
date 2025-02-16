@@ -434,3 +434,17 @@ parentNode.insertBefore需要找到[目标兄弟Host节点]，需要考虑以下
 + lanes作为lane的集合
 
 # 15 实现useEffect
+
+执行副作用
+
+本次更新的任何create回调都必须在所有上一次更新的destroy回调执行完成后再执行
+
+整体执行流程包括:
+1. 遍历effect
+2. 首先触发所有unmount effect 且对于某个fiber， 如果触发了unmount destroy, 本次更新不会再触发update create
+3. 触发所有上次更新的destroy
+4. 触发所有上次更新的create
+
+mount, update时的区别
++ mount时 一定标记PassiveEffect
++ update时， deps变化时标记PassiveEffect

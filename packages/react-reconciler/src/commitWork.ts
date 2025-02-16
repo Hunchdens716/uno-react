@@ -1,8 +1,9 @@
 import { Container, Instance, appendChildToContainer, commitUpdate, insertChildToContainer, removeChild } from "hostConfig";
 import { FiberNode, FiberRootNode, PendingsPassiveEffects } from "./fiber";
-import { ChildDeletion, MutationMask, NoFlags, PassiveEffect, Placement, Update } from "./fiberFlags";
+import { ChildDeletion, Flags, MutationMask, NoFlags, PassiveEffect, PassiveMask, Placement, Update } from "./fiberFlags";
 import { FunctionComponent, HostComponent, HostRoot, HostText } from "./workTags";
-import { FCUpdateQueue } from "./fiberHooks";
+import { Effect, FCUpdateQueue } from "./fiberHooks";
+import { HookHasEfffect } from "./hookEffectTags";
 
 let nextEffect: FiberNode | null = null; 
 
@@ -13,7 +14,7 @@ export const commitMutationEffects = (finishedWork: FiberNode, root: FiberRootNo
         // 向下遍历
         const child: FiberNode | null = nextEffect.child;
 
-        if ((nextEffect.subtreeFlags & MutationMask) !== NoFlags && child !== null) {
+        if ((nextEffect.subtreeFlags & (MutationMask | PassiveMask)) !== NoFlags && child !== null) {
             nextEffect = child;
         } else {
             // 向上遍历 DFS 遍历可能不是最深的节点 可能是第一个subtreeFlags 
@@ -83,6 +84,47 @@ function commitPassiveEffect(fiber: FiberNode, root: FiberRootNode, type: keyof 
         root.pendingPassiveEffects[type].push(updateQueue.lastEffect!);
     }
 }
+
+function commitHookEffectList(flags: Flags, lastEffect: Effect, callback: (effect: Effect) => void) {
+    let effect = lastEffect.next as Effect;
+
+    do {
+        if ((effect.tag & flags) === flags) {
+            callback(effect);
+        }
+        effect = effect.next as Effect;
+    } while(effect !== lastEffect.next)
+}
+
+export function commitHookEffectListUnmount(flags: Flags, lastEffect: Effect) {
+    commitHookEffectList(flags, lastEffect, effect => {
+        const destroy = effect.destroy; 
+        if (typeof destroy === 'function') {
+            destroy();
+        }
+        effect.tag &= ~HookHasEfffect;
+    })
+}
+
+export function commitHookEffectListCreate(flags: Flags, lastEffect: Effect) {
+    commitHookEffectList(flags, lastEffect, effect => {
+        const create = effect.create; 
+        if (typeof create === 'function') {
+            effect.destroy = create();
+        }
+        effect.tag &= ~HookHasEfffect;
+    })
+}
+
+export function commitHookEffectListDestroy(flags: Flags, lastEffect: Effect) {
+    commitHookEffectList(flags, lastEffect, effect => {
+        const destroy = effect.destroy; 
+        if (typeof destroy === 'function') {
+            destroy();
+        }
+    })
+}
+
 
 function recordHostChildrenToDelete(childrenToDelete: FiberNode[], unmountFiber: FiberNode) {
     // 1.找到第一个root host节点
